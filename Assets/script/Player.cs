@@ -1,13 +1,27 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour
 {
+
+    [Header("Movement")]
     public float speed = 5f;
     public float jumpForce = 10f;
     public Transform groundCheck;
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
 
+    [Header("Health")]
+    public Image healthImage;
+
+    [Header("Wall Sliding")]
+    public float wallCheckDistance = -0.87f;
+    public float wallSlideSpeed = 2f;
+
+    private bool isTouchingWall;
+    private bool isWallSliding;
+
+    private int health = 100;
     private Rigidbody2D rb;
     private bool isGrounded;
     private SpriteRenderer spriteRenderer;
@@ -41,10 +55,15 @@ public class PlayerMovement : MonoBehaviour
         }
 
         SetAnimation(moveInput);
+
+        healthImage.fillAmount = health / 100;
+
+        HandleWallSlide(moveInput);
     }
 
     private void FixedUpdate()
     {
+        isTouchingWall = Physics2D.Raycast(transform.position, spriteRenderer.flipX ? Vector2.left : Vector2.right, wallCheckDistance, groundLayer);
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
     }
 
@@ -63,7 +82,11 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            if(rb.linearVelocityY > 0)
+            if(isWallSliding)
+            {
+                animator.Play("Wall-Slide");
+            }
+            else if(rb.linearVelocityY > 0)
             {
                 animator.Play("jump");
             }
@@ -71,6 +94,19 @@ public class PlayerMovement : MonoBehaviour
             {
                 animator.Play("Fall");
             }
+        }
+    }
+
+    private void HandleWallSlide(float moveInput)
+    {
+        if (isTouchingWall && !isGrounded && moveInput != 0 && rb.linearVelocityY < 0)
+        {
+            isWallSliding = true;
+            rb.linearVelocityY = -wallSlideSpeed;
+        }
+        else
+        {
+            isWallSliding = false;
         }
     }
 }
